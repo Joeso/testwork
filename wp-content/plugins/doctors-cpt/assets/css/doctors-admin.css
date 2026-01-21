@@ -1,0 +1,7 @@
+/**
+ * Doctors CPT Admin Styles
+ */
+.doctor-meta-fields { padding: 10px; }
+.column-doctor_rating { width: 100px; }
+.column-doctor_experience { width: 80px; }
+.column-doctor_price { width: 100px; }

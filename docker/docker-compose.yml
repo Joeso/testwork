@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # MySQL Database - using 5.7 for better compatibility
+  db:
+    image: mysql:5.7
+    container_name: crm_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: joomla_crm
+      MYSQL_USER: joomla
+      MYSQL_PASSWORD: joomla_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_password", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  # Joomla with Apache/PHP
+  joomla:
+    image: joomla:4-php8.1-apache
+    container_name: crm_joomla
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_started
+    environment:
+      JOOMLA_DB_HOST: db
+      JOOMLA_DB_USER: joomla
+      JOOMLA_DB_PASSWORD: joomla_password
+      JOOMLA_DB_NAME: joomla_crm
+    volumes:
+      - joomla_data:/var/www/html
+      - ./setup-crm.php:/var/www/html/setup-crm.php
+      - ./crm-api.php:/var/www/html/crm-api.php
+    ports:
+      - "8080:80"
+
+  # phpMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: crm_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_started
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root_password
+    ports:
+      - "8081:80"
+
+volumes:
+  mysql_data:
+  joomla_data:
